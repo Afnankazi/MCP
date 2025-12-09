@@ -1,4 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 export async function detectBugs(params) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -9,13 +11,33 @@ export async function detectBugs(params) {
   
   const ai = new GoogleGenAI({ apiKey });
   
+  let codeToAnalyze = params.code;
+  let filePath = null;
+  
+  // If rootDirectory and fileName are provided, read from file
+  if (params.rootDirectory && params.fileName) {
+    try {
+      filePath = join(params.rootDirectory, params.fileName);
+      codeToAnalyze = await readFile(filePath, 'utf-8');
+      console.error(`Successfully read file: ${filePath}`);
+    } catch (error) {
+      throw new Error(`Failed to read file ${filePath}: ${error.message}`);
+    }
+  }
+  
+  // Validate we have code to analyze
+  if (!codeToAnalyze) {
+    throw new Error("No code provided. Either provide 'code' parameter or 'rootDirectory' + 'fileName'");
+  }
+  
   // Build the prompt for Gemini
   const prompt = `Analyze the following code for potential bugs, errors, and issues:
 
 Language: ${params.language}
+${filePath ? `File: ${params.fileName}` : ''}
 Code:
 \`\`\`${params.language}
-${params.code}
+${codeToAnalyze}
 \`\`\`
 
 Please provide a detailed bug analysis with the following structure:
@@ -79,6 +101,8 @@ Please provide a detailed bug analysis with the following structure:
     return {
       success: true,
       language: params.language,
+      ...(filePath && { filePath, fileName: params.fileName }),
+      linesOfCode: codeToAnalyze.split('\n').length,
       summary: bugAnalysis.summary,
       issues: bugAnalysis.issues,
       overallAssessment: bugAnalysis.overallAssessment,

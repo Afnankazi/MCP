@@ -73,10 +73,12 @@ server.tool(
 // MCP Tool 2: Bug Detector
 server.tool(
   "detect-bugs",
-  "Analyze code for potential bugs and issues",
+  "Analyze code for potential bugs and issues. Can analyze code directly or read from a file.",
   {
-    code: z.string(),
+    code: z.string().optional(),
     language: z.string(),
+    rootDirectory: z.string(),
+    fileName: z.string()
   },
   {
     title: "Bug Detector",
@@ -87,10 +89,10 @@ server.tool(
   },
   async (params) => {
     try {
-      const data = await detectBugs(params);  // ← Get the data
+      const data = await detectBugs(params);
       return {
         content: [
-          { type: "text", text: JSON.stringify(data, null, 2) }  // ← Return it
+          { type: "text", text: JSON.stringify(data, null, 2) }
         ]
       };
     } catch (error) {
