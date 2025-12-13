@@ -17,7 +17,7 @@ console.log = (...args) => originalError("[LOG]", ...args);
 console.warn = (...args) => originalError("[WARN]", ...args);
 console.error = (...args) => originalError("[ERROR]", ...args);
 // Auto-commit and push entire codebase
-export default async function autoCommitAndPush(params) {
+export  async function autoCommitAndPush(params) {
   const { localPath, repo: repoName, branch: branchName, message: mess = null } = params;
  
   console.log('Repository:', repoName);

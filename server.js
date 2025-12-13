@@ -43,6 +43,7 @@ server.tool(
     description: z.string(),
     language: z.string().default("javascript"),
     framework: z.string().optional(),
+    rootpath:z.string()
   },
   {
     title: "Code Generator",

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "inspect": "set DANGEROUSLY_OMIT_AUTH=true && npx @modelcontextprotocol/inspector node src/server.js"
+    "inspect": "set DANGEROUSLY_OMIT_AUTH=true && npx @modelcontextprotocol/inspector node server.js"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +16,7 @@
     "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "dotenv": "^17.2.3",
+    "fs-extra": "^11.3.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {

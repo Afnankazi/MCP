@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-
+import fs from "fs-extra";
+import path from "path";
 export async function generateCode(params) {
   const apiKey = process.env.GEMINI_API_KEY;
   
@@ -30,14 +31,27 @@ Please provide:
    - Environment variables needed
 5. Any additional configuration files needed
 
+IMPORTANT: The fileStructure should represent the direct contents of the project directory, NOT wrapped in a root node.
+
 Format your response as JSON with the following structure:
 {
   "projectName": "project-name",
-  "fileStructure": {
-    "type": "directory",
-    "name": "root",
-    "children": [...]
-  },
+  "fileStructure": [
+    {
+      "type": "file",
+      "name": "README.md"
+    },
+    {
+      "type": "directory",
+      "name": "src",
+      "children": [
+        {
+          "type": "file",
+          "name": "index.js"
+        }
+      ]
+    }
+  ],
   "files": [
     {
       "path": "relative/path/to/file",
@@ -68,7 +82,7 @@ Format your response as JSON with the following structure:
       contents: prompt,
       config: {
         systemInstruction: "You are an expert software developer who creates complete, production-ready projects with clear documentation and setup instructions.",
-        temperature: 0.5,
+        temperature: 0.7,
         topK: 40,
         topP: 0.95,
       }
@@ -103,9 +117,7 @@ Format your response as JSON with the following structure:
     
     const jsonString = jsonMatch[0];
     const projectData = JSON.parse(jsonString);
-    
-    // Return data that can be used by writeFilesToDisk function
-    return {
+    const data =  {
       success: true,
       projectName: projectData.projectName,
       fileStructure: projectData.fileStructure,
@@ -119,6 +131,10 @@ Format your response as JSON with the following structure:
         hasTests: params.includeTests
       }
     };
+    await generateProject(data , params.rootpath)
+    
+    // Return data that can be used by writeFilesToDisk function
+    return data
     
   } catch (error) {
     console.error("Code generation error:", error);
@@ -126,66 +142,57 @@ Format your response as JSON with the following structure:
   }
 }
 
-// Helper function to write generated files to user's local file system
-// This uses the File System Access API (works in Chrome, Edge, Opera)
-export async function writeFilesToDisk(projectData) {
-  try {
-    // Check if File System Access API is supported
-    if (!('showDirectoryPicker' in window)) {
-      throw new Error('File System Access API is not supported in this browser. Please use Chrome, Edge, or Opera.');
+
+
+
+/**
+ * Creates directories recursively based on fileStructure tree
+ */
+async function createStructure(basePath, node) {
+  if (node.type === "directory") {
+    const dirPath = path.join(basePath, node.name);
+    await fs.ensureDir(dirPath);
+
+    if (node.children) {
+      for (const child of node.children) {
+        await createStructure(dirPath, child);
+      }
     }
-    
-    // Ask user to select a directory where project will be created
-    const directoryHandle = await (window).showDirectoryPicker({
-      mode: 'readwrite'
-    });
-    
-    // Create project root directory
-    const projectDirHandle = await directoryHandle.getDirectoryHandle(
-      projectData.projectName,
-      { create: true }
-    );
-    
-    // Write all files
-    for (const file of projectData.files) {
-      await writeFile(projectDirHandle, file.path, file.content);
-    }
-    
-    return {
-      success: true,
-      message: `Successfully created ${projectData.files.length} files in ${projectData.projectName}`,
-      location: directoryHandle.name
-    };
-    
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      return {
-        success: false,
-        message: 'User cancelled directory selection'
-      };
-    }
-    throw error;
+  }
+
+  if (node.type === "file") {
+    const filePath = path.join(basePath, node.name);
+    await fs.ensureFile(filePath);
   }
 }
 
-// Helper function to write a single file, creating directories as needed
-async function writeFile(dirHandle, filePath, content) {
-  const parts = filePath.split('/');
-  const fileName = parts.pop();
-  
-  // Create nested directories if needed
-  let currentDir = dirHandle;
-  for (const part of parts) {
-    if (part) {
-      currentDir = await currentDir.getDirectoryHandle(part, { create: true });
-    }
+/**
+ * Writes actual file contents
+ */
+async function writeFiles(projectPath, files) {
+  for (const file of files) {
+    const fullPath = path.join(projectPath, file.path);
+    await fs.outputFile(fullPath, file.content || "");
   }
-  
-  // Write the file
-  if (fileName) {
-    const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(content);
-    await writable.close();
-  }
+}
+
+/**
+ * MAIN FUNCTION — JSON is passed directly
+ */
+async function generateProject(data , root) {
+    
+const CODEGEN_ROOT = root;
+  // The project root inside your defined root directory
+  const projectPath = path.join(CODEGEN_ROOT, data.projectName);
+
+  console.log("Generating project at:", projectPath);
+  await fs.ensureDir(projectPath);
+
+  // Create folder structure
+  await createStructure(projectPath, data.fileStructure);
+
+  // Write content into files
+  await writeFiles(projectPath, data.files);
+
+  console.log("✅ Project generated successfully!");
 }
