@@ -598,7 +598,7 @@ function buildCommand(toolName, formData) {
       }${formData.strictMode ? " (strict mode)" : ""}:\n\n${formData.code}`;
 
     case "github-commit":
-      return `Commit to github localPath: ${formData.localPath} repo: ${
+      return `Commit to github directory: ${formData.localPath} repo: ${
         formData.repo
       } branch: ${formData.branch} message: ${formData.message}${
         formData.owner ? " owner: " + formData.owner : ""

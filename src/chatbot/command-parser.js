@@ -133,21 +133,31 @@ export class CommandParser {
           // Use direct code instead of file path
           params.code = directCode;
         } else {
-          // Extract file path (could be full path or just filename)
-          const filePath = this.extractFilePath(input);
-          if (filePath) {
-            // If it's a full path, split into directory and filename
-            if (filePath.includes('/') || filePath.includes('\\')) {
-              const pathParts = filePath.replace(/\\/g, '/').split('/');
-              params.fileName = pathParts.pop(); // Last part is filename
-              params.rootDirectory = pathParts.join('/'); // Rest is directory
+          // Try to extract directory explicitly first (from form input)
+          const directory = this.extractPath(input);
+          const fileName = this.extractFileName(input);
+          
+          if (directory && fileName) {
+            // Both directory and filename provided (from form)
+            params.rootDirectory = directory;
+            params.fileName = fileName;
+          } else {
+            // Extract file path (could be full path or just filename)
+            const filePath = this.extractFilePath(input);
+            if (filePath) {
+              // If it's a full path, split into directory and filename
+              if (filePath.includes('/') || filePath.includes('\\')) {
+                const pathParts = filePath.replace(/\\/g, '/').split('/');
+                params.fileName = pathParts.pop(); // Last part is filename
+                params.rootDirectory = pathParts.join('/'); // Rest is directory
+              } else {
+                // Just a filename, use current directory
+                params.fileName = filePath;
+                params.rootDirectory = process.cwd();
+              }
             } else {
-              // Just a filename, use current directory
-              params.fileName = filePath;
               params.rootDirectory = process.cwd();
             }
-          } else {
-            params.rootDirectory = process.cwd();
           }
         }
         break;
@@ -161,7 +171,14 @@ export class CommandParser {
         break;
         
       case 'github-commit':
-        params.localPath = this.extractPath(input) || process.cwd();
+        // Extract localPath - DON'T default to process.cwd() if not found
+        const extractedPath = this.extractPath(input);
+        if (extractedPath) {
+          params.localPath = extractedPath;
+        } else {
+          // Only use cwd if no path provided at all
+          params.localPath = process.cwd();
+        }
         const repo = this.extractRepo(input);
         if (repo) params.repo = repo;
         const owner = this.extractOwner(input);
@@ -221,12 +238,34 @@ export class CommandParser {
   }
 
   extractPath(input) {
-    // Look for path patterns
-    const pathMatch = input.match(/(?:path|dir|directory|folder)[:=]?\s*([^\s]+)/i);
-    if (pathMatch) return pathMatch[1];
+    // Look for path patterns with better matching for paths with spaces
+    // Match everything between "directory:" and "language:" or end of line
+    const dirMatch = input.match(/directory[:=]?\s*([^\n]+?)(?=\s+language[:=]|\s+file[:=]|$)/i);
+    if (dirMatch) {
+      let path = dirMatch[1].trim();
+      // Remove trailing keywords
+      path = path.replace(/\s+(language|file|branch|message|repo)[:=].*$/i, '');
+      return path.trim();
+    }
     
-    // Look for absolute or relative paths
-    const absPathMatch = input.match(/[\/\\][\w\-\/\\. ]+/);
+    // Look for localPath: pattern for github-commit
+    const localMatch = input.match(/localPath[:=]?\s*([^\n]+?)(?=\s+repo[:=]|\s+branch[:=]|$)/i);
+    if (localMatch) {
+      let path = localMatch[1].trim();
+      path = path.replace(/\s+(repo|branch|message|owner)[:=].*$/i, '');
+      return path.trim();
+    }
+    
+    // Look for path: or folder: pattern
+    const pathMatch = input.match(/(?:path|folder)[:=]?\s*([^\n]+?)(?=\s+\w+[:=]|$)/i);
+    if (pathMatch) {
+      let path = pathMatch[1].trim();
+      path = path.replace(/\s+\w+[:=].*$/i, '');
+      return path.trim();
+    }
+    
+    // Look for absolute paths (Windows or Unix)
+    const absPathMatch = input.match(/[A-Z]:\\[\w\-\\ .]+|\/[\w\-\/ .]+/i);
     if (absPathMatch) return absPathMatch[0].trim();
     
     return null;
