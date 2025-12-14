@@ -1,11 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "your-api-key-here"
-});
-
 export async function checkBestPractices(params) {
   const { code, language, framework, strictMode = false } = params;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const prompt = `You are a code review expert. Analyze this ${language} code for best practices.

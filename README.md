@@ -1,128 +1,41 @@
-# AI Chatbot 🤖
+# AI Chatbot (Gemini + WebSocket)
 
-A simple, powerful AI chatbot powered by Google Gemini for code assistance.
+One-page React + Tailwind UI that talks to a single Node/Express + WebSocket backend powered by Google Gemini. Tools: generate code, detect bugs, check best practices, GitHub commit.
 
-## Features
-
-✨ **Natural Language Interface** - Just type what you want
-🧠 **Gemini AI** - Smart intent understanding
-🎨 **Clean Web UI** - Beautiful, modern interface
-⚡ **4 Powerful Tools:**
-- **Generate Code** - Create complete projects
-- **Detect Bugs** - Find issues in your code
-- **Best Practices** - Review code quality
-- **GitHub Commit** - Push to GitHub
-
-## Quick Start
-
-### 1. Install Dependencies
-
+## Setup
+1) Install deps  
 ```bash
 npm install
 ```
-
-### 2. Setup Environment
-
-Create `.env` file:
-
+2) Add `.env`  
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-GITHUB_TOKEN=your_github_token_here
+GEMINI_API_KEY=your_gemini_api_key
+GITHUB_TOKEN=your_github_token   # needed for GitHub commits
+PORT=3001                        # optional
 ```
-
-Get your API keys:
-- **Gemini API:** https://aistudio.google.com/apikey
-- **GitHub Token:** https://github.com/settings/tokens
-
-### 3. Run the Server
-
+3) Run  
 ```bash
 npm start
 ```
+Then open http://localhost:3001
 
-Open http://localhost:3001 in your browser
-
-## Usage Examples
-
-### Natural Language Commands
-
+## Project layout
 ```
-Generate a calculator app in React
+server.js                      # Express + WebSocket + tool router
+src/tools/                     # Gemini + GitHub tools
+  generate-code.js
+  detect-bugs.js
+  check-best-practices.js
+  github-commit.js
+src/chatbot/web/               # React + Tailwind UI (served statically)
+  index.html
+  app.jsx
+package.json
+.env (local)
 ```
-
-```
-Check my code for bugs:
-
-function test() {
-  return x.tostring();
-}
-
-language: javascript
-```
-
-```
-Review this Python code for best practices:
-
-print("hello")
-```
-
-```
-Commit my project at /path/to/project to GitHub repo my-project
-```
-
-## Project Structure
-
-```
-.
-├── server.js                    # Main server (WebSocket + Express)
-├── src/
-│   ├── tools/                   # AI tools
-│   │   ├── generate-code.js     # Code generation
-│   │   ├── detect-bugs.js       # Bug detection
-│   │   ├── check-best-practices.js  # Code review
-│   │   └── github-commit.js     # GitHub integration
-│   └── chatbot/
-│       └── web/                 # Web interface
-│           ├── index.html
-│           ├── styles.css
-│           └── app.js
-├── package.json
-└── .env                         # Your API keys
-```
-
-## Architecture
-
-**Simple & Clean:**
-```
-Web UI → WebSocket → Single Server → Gemini AI + Tools
-```
-
-**No complexity:**
-- ❌ No CLI
-- ❌ No MCP protocol
-- ❌ No command parser
-- ❌ No multiple processes
-
-**Just:**
-- ✅ One server
-- ✅ One command to run
-- ✅ Natural language with Gemini
-
-## Tech Stack
-
-- **Backend:** Node.js + Express + WebSocket
-- **AI:** Google Gemini 2.5 Flash
-- **Frontend:** Vanilla JavaScript
-- **APIs:** GitHub REST API
 
 ## Tips
-
-1. **Type naturally** - The AI understands context
-2. **Paste code directly** - No need for file paths
-3. **Be specific** - Include language and framework
-4. **Use "help"** - See examples anytime
-
-## License
-
-ISC
+- Type natural requests; use “help” to see tool hints.
+- Paste code directly for bug/best-practice checks.
+- For commits, provide repo, branch, path, and optional message.
 
