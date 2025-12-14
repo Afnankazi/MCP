@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:github": "node src/tools/test-github-commit.js",
     "start": "node src/server.js",
     "chatbot": "node src/chatbot/cli.js",
     "web": "npx serve src/chatbot/web -p 3000",
